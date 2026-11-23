@@ -9,6 +9,7 @@ from src.agentic_rag import AgenticRAGAssistant
 from src.workflow_rag import WorkflowRAGAssistant
 from src.config import (
     DEFAULT_GROQ_MODEL,
+    AVAILABLE_GROQ_MODELS,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_CHUNK_OVERLAP,
     DEFAULT_TOP_K,
@@ -97,6 +98,12 @@ with st.sidebar:
             type="password",
             value=os.getenv("OPENAI_API_KEY", ""),
             help="Required for OpenAI Embeddings (text-embedding-3-small)",
+        )
+        selected_model = st.selectbox(
+            "Groq LLM Model:",
+            AVAILABLE_GROQ_MODELS,
+            index=0,
+            help="llama-3.1-8b-instant is globally accessible on all free Groq accounts.",
         )
 
     # Architecture Mode Selector (Both resume bullet points)
@@ -253,7 +260,7 @@ if user_query:
                     assistant = AgenticRAGAssistant(
                         retriever=retriever,
                         groq_api_key=active_groq_key,
-                        model_name=DEFAULT_GROQ_MODEL,
+                        model_name=selected_model,
                     )
                     response_data = assistant.query(
                         user_message=user_query,
@@ -266,7 +273,7 @@ if user_query:
                     assistant = WorkflowRAGAssistant(
                         retriever=retriever,
                         groq_api_key=active_groq_key,
-                        model_name=DEFAULT_GROQ_MODEL,
+                        model_name=selected_model,
                     )
                     response_data = assistant.query(
                         user_message=user_query,
