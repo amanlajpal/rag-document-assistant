@@ -5,10 +5,13 @@ from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 
 # Supported default models
-DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 AVAILABLE_GROQ_MODELS = [
-    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
     "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
     "llama-3.1-70b-versatile",
     "mixtral-8x7b-32768",
     "gemma2-9b-it",
@@ -18,6 +21,7 @@ AVAILABLE_GROQ_MODELS = [
 DISALLOWED_MODEL_KEYWORDS = [
     "guard",
     "prompt-guard",
+    "safeguard",
     "whisper",
     "embed",
     "tts",
@@ -27,6 +31,9 @@ DISALLOWED_MODEL_KEYWORDS = [
 ]
 
 PRIORITY_MODELS = [
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
     "llama-3.1-70b-versatile",
@@ -61,9 +68,7 @@ def fetch_available_groq_models(groq_api_key: str) -> List[str]:
             m_lower = model_id.lower()
             if any(bad in m_lower for bad in DISALLOWED_MODEL_KEYWORDS):
                 continue
-            # Keep models suitable for general chat / tool calling
-            if any(good in m_lower for good in ["llama", "mixtral", "gemma", "qwen", "deepseek"]):
-                valid_chat_models.append(model_id)
+            valid_chat_models.append(model_id)
 
         # Sort so that proven general chat models appear first
         sorted_models = []

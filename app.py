@@ -104,6 +104,14 @@ with st.sidebar:
             st.caption("⚡ Detected **Groq (console.groq.com)** API Key")
             discovered_models = fetch_available_groq_models(active_key)
             selected_model = st.selectbox("Groq Model:", discovered_models, index=0)
+            custom_model = st.text_input(
+                "Or enter custom model ID (optional):",
+                value="",
+                placeholder="e.g. openai/gpt-oss-120b",
+                help="Type any exact model ID from your Groq console if desired.",
+            )
+            if custom_model.strip():
+                selected_model = custom_model.strip()
         else:
             if active_key:
                 st.warning("⚠️ Note: Groq keys start with `gsk_` from console.groq.com; xAI Grok keys start with `xai-`.")
