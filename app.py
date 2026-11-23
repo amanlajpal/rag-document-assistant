@@ -15,7 +15,7 @@ from src.config import (
     DEFAULT_CHROMA_DIR,
 )
 
-# Available Groq models with robust fallback in case of Streamlit reload cache
+from src.llm_factory import fetch_available_groq_models
 try:
     from src.config import AVAILABLE_GROQ_MODELS
 except ImportError:
@@ -99,22 +99,31 @@ with st.sidebar:
     # API Keys Section
     with st.expander("🔑 API Credentials", expanded=True):
         groq_api_key = st.text_input(
-            "Groq API Key",
+            "LLM API Key (Groq or xAI Grok)",
             type="password",
             value=os.getenv("GROQ_API_KEY", ""),
-            help="Get your free Groq key at https://console.groq.com",
+            help="Free Groq key (starts with gsk_ from https://console.groq.com) or xAI Grok key (starts with xai-)",
         )
+
+        active_key = groq_api_key.strip()
+        if active_key.startswith("xai-"):
+            st.info("🤖 Detected **xAI (Grok)** API Key")
+            model_options = ["grok-beta", "grok-2-latest", "grok-vision-beta"]
+            selected_model = st.selectbox("xAI Model:", model_options, index=0)
+        elif active_key.startswith("gsk_"):
+            st.caption("⚡ Detected **Groq (console.groq.com)** API Key")
+            discovered_models = fetch_available_groq_models(active_key)
+            selected_model = st.selectbox("Groq Model:", discovered_models, index=0)
+        else:
+            if active_key:
+                st.warning("⚠️ Note: Groq keys start with `gsk_` from console.groq.com; xAI Grok keys start with `xai-`.")
+            selected_model = st.selectbox("Groq Model:", AVAILABLE_GROQ_MODELS, index=0)
+
         openai_api_key = st.text_input(
-            "OpenAI API Key",
+            "OpenAI API Key (Optional)",
             type="password",
             value=os.getenv("OPENAI_API_KEY", ""),
-            help="Required for OpenAI Embeddings (text-embedding-3-small)",
-        )
-        selected_model = st.selectbox(
-            "Groq LLM Model:",
-            AVAILABLE_GROQ_MODELS,
-            index=0,
-            help="llama-3.1-8b-instant is globally accessible on all free Groq accounts.",
+            help="Required only if using OpenAI Embeddings (text-embedding-3-small)",
         )
 
     # Architecture Mode Selector (Both resume bullet points)

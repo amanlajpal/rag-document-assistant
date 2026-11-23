@@ -2,11 +2,11 @@ import os
 from typing import Annotated, Dict, Any, List, Optional, TypedDict
 from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
-from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 from src.config import DEFAULT_GROQ_MODEL
+from src.llm_factory import get_llm
 
 
 class WorkflowState(TypedDict):
@@ -53,9 +53,9 @@ class WorkflowRAGAssistant:
 
         self.model_name = model_name
         self.temperature = temperature
-        self.llm = ChatGroq(
-            model=self.model_name,
-            groq_api_key=self.groq_api_key,
+        self.llm = get_llm(
+            api_key=self.groq_api_key,
+            model_name=self.model_name,
             temperature=self.temperature,
         )
 

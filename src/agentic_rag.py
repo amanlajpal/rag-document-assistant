@@ -2,10 +2,10 @@ import os
 from typing import Optional, List, Dict, Any
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langchain_core.tools import Tool, create_retriever_tool
-from langchain_groq import ChatGroq
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from src.config import DEFAULT_GROQ_MODEL
+from src.llm_factory import get_llm
 
 
 AGENT_SYSTEM_PROMPT = """You are an intelligent, precise conversational PDF assistant.
@@ -48,10 +48,10 @@ class AgenticRAGAssistant:
         self.agent_executor = self._build_agent()
 
     def _build_agent(self):
-        # 1. Initialize Groq Chat Model with tool calling capability
-        llm = ChatGroq(
-            model=self.model_name,
-            groq_api_key=self.groq_api_key,
+        # 1. Initialize Chat Model with tool calling capability
+        llm = get_llm(
+            api_key=self.groq_api_key,
+            model_name=self.model_name,
             temperature=self.temperature,
         )
 
