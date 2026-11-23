@@ -67,12 +67,21 @@ class AgenticRAGAssistant:
         )
 
         # 3. Create LangGraph ReAct agent with system prompt and MemorySaver
-        agent = create_react_agent(
-            model=llm,
-            tools=[retriever_tool],
-            state_modifier=AGENT_SYSTEM_PROMPT,
-            checkpointer=self.checkpointer,
-        )
+        # Supports 'prompt' (modern LangGraph) with fallback to 'state_modifier' (legacy)
+        try:
+            agent = create_react_agent(
+                model=llm,
+                tools=[retriever_tool],
+                prompt=AGENT_SYSTEM_PROMPT,
+                checkpointer=self.checkpointer,
+            )
+        except TypeError:
+            agent = create_react_agent(
+                model=llm,
+                tools=[retriever_tool],
+                state_modifier=AGENT_SYSTEM_PROMPT,
+                checkpointer=self.checkpointer,
+            )
         return agent
 
     def query(self, user_message: str, thread_id: str = "default_thread") -> Dict[str, Any]:
@@ -93,13 +102,22 @@ class AgenticRAGAssistant:
 
         for msg in reversed(messages):
             if isinstance(msg, AIMessage) and msg.content:
-                final_answer = msg.content
-                break
+                if isinstance(msg.content, str):
+                    final_answer = msg.content
+                elif isinstance(msg.content, list):
+                    text_parts = [
+                        p["text"] if isinstance(p, dict) and "text" in p else str(p)
+                        for p in msg.content
+                    ]
+                    final_answer = "\n".join(text_parts)
+                if final_answer.strip():
+                    break
 
         # Check for tool call messages to extract retrieved context snippets
         for msg in messages:
-            if hasattr(msg, "name") and msg.name == "search_pdf_documents":
-                tool_sources.append(msg.content)
+            if getattr(msg, "name", None) == "search_pdf_documents" or type(msg).__name__ == "ToolMessage":
+                if msg.content:
+                    tool_sources.append(msg.content)
 
         return {
             "answer": final_answer,
