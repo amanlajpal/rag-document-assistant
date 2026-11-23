@@ -14,9 +14,8 @@ __pycache__/
 chroma_db/
 uploaded_docs/
 
-# Streamlit config / cache
+# Streamlit secrets (keep config.toml tracked)
 .streamlit/secrets.toml
-.streamlit/
 
 # OS metadata
 .DS_Store
