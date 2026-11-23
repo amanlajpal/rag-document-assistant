@@ -9,12 +9,23 @@ from src.agentic_rag import AgenticRAGAssistant
 from src.workflow_rag import WorkflowRAGAssistant
 from src.config import (
     DEFAULT_GROQ_MODEL,
-    AVAILABLE_GROQ_MODELS,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_CHUNK_OVERLAP,
     DEFAULT_TOP_K,
     DEFAULT_CHROMA_DIR,
 )
+
+# Available Groq models with robust fallback in case of Streamlit reload cache
+try:
+    from src.config import AVAILABLE_GROQ_MODELS
+except ImportError:
+    AVAILABLE_GROQ_MODELS = [
+        "llama-3.1-8b-instant",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-70b-versatile",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it",
+    ]
 
 # Load local environment variables if available
 load_dotenv()
