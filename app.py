@@ -15,17 +15,7 @@ from src.config import (
     DEFAULT_CHROMA_DIR,
 )
 
-from src.llm_factory import fetch_available_groq_models
-try:
-    from src.config import AVAILABLE_GROQ_MODELS
-except ImportError:
-    AVAILABLE_GROQ_MODELS = [
-        "llama-3.1-8b-instant",
-        "llama-3.3-70b-versatile",
-        "llama-3.1-70b-versatile",
-        "mixtral-8x7b-32768",
-        "gemma2-9b-it",
-    ]
+from src.llm_factory import fetch_available_groq_models, AVAILABLE_GROQ_MODELS
 
 # Load local environment variables if available
 load_dotenv()

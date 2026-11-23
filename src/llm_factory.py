@@ -3,7 +3,16 @@ from typing import Optional, List
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
-from src.config import DEFAULT_GROQ_MODEL, AVAILABLE_GROQ_MODELS
+
+# Supported default models
+DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+AVAILABLE_GROQ_MODELS = [
+    "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
+    "llama-3.1-70b-versatile",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it",
+]
 
 
 def fetch_available_groq_models(groq_api_key: str) -> List[str]:
