@@ -15,10 +15,33 @@ AVAILABLE_GROQ_MODELS = [
 ]
 
 
+DISALLOWED_MODEL_KEYWORDS = [
+    "guard",
+    "prompt-guard",
+    "whisper",
+    "embed",
+    "tts",
+    "stt",
+    "classification",
+    "moderation",
+]
+
+PRIORITY_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "llama-3.1-70b-versatile",
+    "llama3-70b-8192",
+    "llama3-8b-8192",
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it",
+]
+
+
 def fetch_available_groq_models(groq_api_key: str) -> List[str]:
     """
-    Dynamically fetches the exact list of available models for a given Groq API key.
-    Filters for chat models suitable for tool calling and RAG.
+    Dynamically fetches the active models for a given Groq API key,
+    strictly filtering out safety guardrails, classifiers, and speech models.
+    Prioritizes top tool-calling conversational LLMs.
     """
     if not groq_api_key or not groq_api_key.startswith("gsk_"):
         return AVAILABLE_GROQ_MODELS
@@ -28,13 +51,32 @@ def fetch_available_groq_models(groq_api_key: str) -> List[str]:
 
         client = groq.Groq(api_key=groq_api_key)
         models_data = client.models.list()
-        # Extract model IDs
-        model_ids = [m.id for m in models_data.data if m.active]
-        # Prefer llama/mixtral chat models
-        chat_models = [
-            m for m in model_ids if any(k in m.lower() for k in ["llama", "mixtral", "gemma"])
-        ]
-        return chat_models if chat_models else model_ids
+
+        # Extract active model IDs
+        all_active = [m.id for m in models_data.data if getattr(m, "active", True)]
+
+        # Filter out safety guards, audio models, and classifiers
+        valid_chat_models = []
+        for model_id in all_active:
+            m_lower = model_id.lower()
+            if any(bad in m_lower for bad in DISALLOWED_MODEL_KEYWORDS):
+                continue
+            # Keep models suitable for general chat / tool calling
+            if any(good in m_lower for good in ["llama", "mixtral", "gemma", "qwen", "deepseek"]):
+                valid_chat_models.append(model_id)
+
+        # Sort so that proven general chat models appear first
+        sorted_models = []
+        for p in PRIORITY_MODELS:
+            if p in valid_chat_models:
+                sorted_models.append(p)
+
+        # Append remaining valid chat models
+        for m in valid_chat_models:
+            if m not in sorted_models:
+                sorted_models.append(m)
+
+        return sorted_models if sorted_models else AVAILABLE_GROQ_MODELS
     except Exception:
         return AVAILABLE_GROQ_MODELS
 
