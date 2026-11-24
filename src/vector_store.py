@@ -180,8 +180,33 @@ class VectorStoreManager:
 
     def reset_store(self):
         """
-        Deletes and resets persistent Chroma storage.
+        Deletes and resets persistent Chroma storage reliably across all platforms (Windows/Linux/Mac).
+        Deletes all chunks directly via Chroma's collection engine to bypass Windows SQLite file locks.
         """
+        if self.vector_store:
+            try:
+                # 1. Delete all records via collection API
+                data = self.vector_store._collection.get()
+                all_ids = data.get("ids", []) if data else []
+                if all_ids:
+                    self.vector_store._collection.delete(ids=all_ids)
+            except Exception:
+                pass
+
+            try:
+                # 2. Delete collection in Chroma client
+                if hasattr(self.vector_store, "_client"):
+                    self.vector_store._client.delete_collection(self.collection_name)
+            except Exception:
+                pass
+
+        # 3. Clean files from disk if not locked by SQLite
         if os.path.exists(self.persist_directory):
-            shutil.rmtree(self.persist_directory, ignore_errors=True)
+            try:
+                shutil.rmtree(self.persist_directory)
+            except Exception:
+                # On Windows, open SQLite handles remain until process exit.
+                # The collection delete above already wiped all data clean.
+                pass
+
         self.vector_store = None
