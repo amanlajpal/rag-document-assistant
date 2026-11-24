@@ -36,6 +36,13 @@ class AgenticRAGAssistant:
         temperature: float = 0.1,
     ):
         self.retriever = retriever
+        if not groq_api_key:
+            try:
+                import streamlit as st
+                if hasattr(st, "secrets") and "GROQ_API_KEY" in st.secrets:
+                    groq_api_key = str(st.secrets["GROQ_API_KEY"]).strip()
+            except Exception:
+                pass
         self.groq_api_key = groq_api_key or os.getenv("GROQ_API_KEY")
         if not self.groq_api_key:
             raise ValueError("Groq API key is required. Please set GROQ_API_KEY.")

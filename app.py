@@ -90,29 +90,47 @@ if "processed_files" not in st.session_state:
     st.session_state.processed_files = []
 
 
+def get_secret(key_name: str, default: str = "") -> str:
+    """Retrieve secret from st.secrets or os.environ without ever exposing it to frontend DOM."""
+    try:
+        if hasattr(st, "secrets") and key_name in st.secrets:
+            val = st.secrets[key_name]
+            if val:
+                return str(val).strip()
+    except Exception:
+        pass
+    return os.getenv(key_name, default).strip()
+
+
 # ==========================================
 # SIDEBAR: Configuration & Document Ingestion
 # ==========================================
 with st.sidebar:
     st.title("⚙️ Configuration")
 
+    server_groq_key = get_secret("GROQ_API_KEY")
+    server_openai_key = get_secret("OPENAI_API_KEY")
+
     # API Keys Section
     with st.expander("🔑 API Credentials", expanded=True):
-        groq_api_key = st.text_input(
+        user_groq_key = st.text_input(
             "LLM API Key (Groq or xAI Grok)",
             type="password",
-            value=os.getenv("GROQ_API_KEY", ""),
-            help="Free Groq key (starts with gsk_ from https://console.groq.com) or xAI Grok key (starts with xai-)",
+            value="",
+            placeholder="•••••••••••••••• (Configured via Server Secret)" if server_groq_key else "e.g. gsk_... or xai-...",
+            help="Free Groq key (starts with gsk_ from https://console.groq.com) or xAI Grok key (starts with xai-). Leave blank to use server secret.",
         )
+        active_groq_key = user_groq_key.strip() if user_groq_key.strip() else server_groq_key
+        if server_groq_key and not user_groq_key.strip():
+            st.caption("🔒 *Using server-configured LLM API key (hidden for security)*")
 
-        active_key = groq_api_key.strip()
-        if active_key.startswith("xai-"):
+        if active_groq_key.startswith("xai-"):
             st.info("🤖 Detected **xAI (Grok)** API Key")
             model_options = ["grok-beta", "grok-2-latest", "grok-vision-beta"]
             selected_model = st.selectbox("xAI Model:", model_options, key="xai_model_select")
-        elif active_key.startswith("gsk_"):
+        elif active_groq_key.startswith("gsk_"):
             st.caption("⚡ Detected **Groq (console.groq.com)** API Key")
-            discovered_models = get_cached_groq_models(active_key)
+            discovered_models = get_cached_groq_models(active_groq_key)
             dropdown_choices = list(discovered_models)
             if "Custom Model ID..." not in dropdown_choices:
                 dropdown_choices.append("Custom Model ID...")
@@ -134,16 +152,20 @@ with st.sidebar:
             else:
                 selected_model = choice
         else:
-            if active_key:
+            if active_groq_key:
                 st.warning("⚠️ Note: Groq keys start with `gsk_` from console.groq.com; xAI Grok keys start with `xai-`.")
             selected_model = st.selectbox("Groq Model:", AVAILABLE_GROQ_MODELS, key="default_groq_model_select")
 
-        openai_api_key = st.text_input(
+        user_openai_key = st.text_input(
             "OpenAI API Key (Optional)",
             type="password",
-            value=os.getenv("OPENAI_API_KEY", ""),
-            help="Required only if using OpenAI Embeddings (text-embedding-3-small)",
+            value="",
+            placeholder="•••••••••••••••• (Configured via Server Secret)" if server_openai_key else "sk-...",
+            help="Required only if using OpenAI Embeddings (text-embedding-3-small). Leave blank to use server secret.",
         )
+        active_openai_key = user_openai_key.strip() if user_openai_key.strip() else server_openai_key
+        if server_openai_key and not user_openai_key.strip():
+            st.caption("🔒 *Using server-configured OpenAI key (hidden for security)*")
 
     # Architecture Mode Selector (Both resume bullet points)
     st.subheader("🧠 RAG Architecture Mode")
@@ -181,7 +203,7 @@ with st.sidebar:
 
     if uploaded_files:
         if st.button("🚀 Process & Index PDFs", type="primary", use_container_width=True):
-            if provider_key == "openai" and not (openai_api_key or os.getenv("OPENAI_API_KEY")):
+            if provider_key == "openai" and not active_openai_key:
                 st.error("⚠️ Please provide an OpenAI API Key or switch to HuggingFace embeddings.")
             else:
                 with st.spinner("Extracting text and chunking documents..."):
@@ -200,7 +222,7 @@ with st.sidebar:
                     # Initialize Vector Store
                     emb_fn = get_embedding_function(
                         provider=provider_key,
-                        openai_api_key=openai_api_key,
+                        openai_api_key=active_openai_key,
                     )
                     st.session_state.vector_manager.initialize_store(embedding_function=emb_fn)
                     st.session_state.vector_manager.add_documents(all_chunks)
@@ -213,7 +235,7 @@ with st.sidebar:
     # Ensure vector store is initialized to read disk contents
     if not st.session_state.vector_manager.vector_store:
         try:
-            emb_fn = get_embedding_function(provider=provider_key, openai_api_key=openai_api_key)
+            emb_fn = get_embedding_function(provider=provider_key, openai_api_key=active_openai_key)
             st.session_state.vector_manager.initialize_store(embedding_function=emb_fn)
         except Exception:
             pass
@@ -314,7 +336,6 @@ for message in st.session_state.messages:
 user_query = st.chat_input("Ask a question about your documents...")
 
 if user_query:
-    active_groq_key = groq_api_key or os.getenv("GROQ_API_KEY")
     if not active_groq_key:
         st.warning("⚠️ Please provide a Groq API Key in the sidebar to enable answers.")
         st.stop()
@@ -332,7 +353,7 @@ if user_query:
                 if not st.session_state.vector_manager.vector_store:
                     emb_fn = get_embedding_function(
                         provider=provider_key,
-                        openai_api_key=openai_api_key,
+                        openai_api_key=active_openai_key,
                     )
                     st.session_state.vector_manager.initialize_store(embedding_function=emb_fn)
 

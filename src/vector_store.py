@@ -21,6 +21,13 @@ def get_embedding_function(
     - 'huggingface': Uses local HuggingFace embeddings for a 100% free option.
     """
     if provider.lower() == "openai":
+        if not openai_api_key:
+            try:
+                import streamlit as st
+                if hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
+                    openai_api_key = str(st.secrets["OPENAI_API_KEY"]).strip()
+            except Exception:
+                pass
         api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError(
