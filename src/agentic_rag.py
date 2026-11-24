@@ -114,10 +114,20 @@ class AgenticRAGAssistant:
                     break
 
         # Check for tool call messages to extract retrieved context snippets
+        raw_tool_chunks = []
         for msg in messages:
             if getattr(msg, "name", None) == "search_pdf_documents" or type(msg).__name__ == "ToolMessage":
                 if msg.content:
-                    tool_sources.append(msg.content)
+                    # In create_retriever_tool, chunks are separated by double newlines
+                    snippets = [s.strip() for s in str(msg.content).split("\n\n") if s.strip()]
+                    raw_tool_chunks.extend(snippets if snippets else [msg.content.strip()])
+
+        # Deduplicate snippets while preserving order
+        seen_snippets = set()
+        for snippet in raw_tool_chunks:
+            if snippet not in seen_snippets:
+                seen_snippets.add(snippet)
+                tool_sources.append(snippet)
 
         return {
             "answer": final_answer,

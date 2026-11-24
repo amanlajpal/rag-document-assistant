@@ -76,12 +76,23 @@ class VectorStoreManager:
     def add_documents(self, documents: List[Document]) -> int:
         """
         Adds split document chunks to the Chroma vector store.
-        Returns the number of documents added.
+        Uses deterministic content hashes as chunk IDs to prevent duplicate chunks.
         """
         if not self.vector_store:
             self.initialize_store()
 
-        self.vector_store.add_documents(documents=documents)
+        import hashlib
+
+        # Generate deterministic IDs based on source, page, and chunk content
+        deterministic_ids = []
+        for doc in documents:
+            source = str(doc.metadata.get("source", "doc"))
+            page = str(doc.metadata.get("page", "1"))
+            content = doc.page_content.strip()
+            chunk_hash = hashlib.md5(f"{source}_{page}_{content}".encode("utf-8")).hexdigest()
+            deterministic_ids.append(chunk_hash)
+
+        self.vector_store.add_documents(documents=documents, ids=deterministic_ids)
         return len(documents)
 
     def get_retriever(self, k: int = DEFAULT_TOP_K):

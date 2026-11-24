@@ -237,14 +237,23 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
         if message.get("sources"):
             with st.expander("🔍 Retrieved Sources & Citations"):
+                seen_snippets = set()
                 for src in message["sources"]:
                     if isinstance(src, dict):
+                        snippet = src.get("snippet", "").strip()
+                        if snippet in seen_snippets:
+                            continue
+                        seen_snippets.add(snippet)
                         st.markdown(
                             f"**File:** `{src.get('source')}` | **Page:** `{src.get('page')}`\n\n"
-                            f"> {src.get('snippet')}"
+                            f"> {snippet}"
                         )
                     else:
-                        st.markdown(f"> {src}")
+                        clean_text = str(src).strip()
+                        if clean_text in seen_snippets:
+                            continue
+                        seen_snippets.add(clean_text)
+                        st.markdown(f"> {clean_text}")
 
 # Handle User Input
 user_query = st.chat_input("Ask a question about your documents...")
@@ -304,14 +313,23 @@ if user_query:
 
                 if sources:
                     with st.expander("🔍 Retrieved Sources & Citations"):
+                        seen_snippets = set()
                         for src in sources:
                             if isinstance(src, dict):
+                                snippet = src.get("snippet", "").strip()
+                                if snippet in seen_snippets:
+                                    continue
+                                seen_snippets.add(snippet)
                                 st.markdown(
                                     f"**File:** `{src.get('source')}` | **Page:** `{src.get('page')}`\n\n"
-                                    f"> {src.get('snippet')}"
+                                    f"> {snippet}"
                                 )
                             else:
-                                st.markdown(f"> {src}")
+                                clean_text = str(src).strip()
+                                if clean_text in seen_snippets:
+                                    continue
+                                seen_snippets.add(clean_text)
+                                st.markdown(f"> {clean_text}")
 
                 # Save assistant response to session state
                 st.session_state.messages.append(

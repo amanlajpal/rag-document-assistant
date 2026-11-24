@@ -88,10 +88,17 @@ class WorkflowRAGAssistant:
             return {"context": "No relevant documents found."}
 
         formatted_snippets = []
+        seen_texts = set()
+
         for doc in docs:
+            cleaned = doc.page_content.strip()
+            if cleaned in seen_texts:
+                continue
+            seen_texts.add(cleaned)
+
             source = doc.metadata.get("source", "Unknown Document")
             page = doc.metadata.get("page", "Unknown Page")
-            snippet = f"--- [Document: {source} | Page: {page}] ---\n{doc.page_content.strip()}"
+            snippet = f"--- [Document: {source} | Page: {page}] ---\n{cleaned}"
             formatted_snippets.append(snippet)
 
         formatted_context = "\n\n".join(formatted_snippets)
@@ -157,13 +164,18 @@ class WorkflowRAGAssistant:
 
         final_state = self.workflow.invoke(inputs, config=config)
 
-        # Extract source citations for UI display
+        # Extract deduplicated source citations for UI display
         sources = []
+        seen_snippets = set()
         for doc in final_state.get("retrieved_docs", []):
+            snippet = doc.page_content.strip()
+            if snippet in seen_snippets:
+                continue
+            seen_snippets.add(snippet)
             sources.append({
                 "source": doc.metadata.get("source", "Document"),
                 "page": doc.metadata.get("page", "1"),
-                "snippet": doc.page_content[:200] + "...",
+                "snippet": snippet[:250] + ("..." if len(snippet) > 250 else ""),
             })
 
         return {
