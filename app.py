@@ -21,6 +21,12 @@ from src.config import (
 
 from src.llm_factory import fetch_available_groq_models, AVAILABLE_GROQ_MODELS
 
+
+@st.cache_data(show_spinner=False)
+def get_cached_groq_models(api_key: str):
+    """Caches discovered Groq models to prevent Streamlit dropdown reset on reruns."""
+    return fetch_available_groq_models(api_key)
+
 # Load local environment variables if available
 load_dotenv()
 
@@ -103,23 +109,34 @@ with st.sidebar:
         if active_key.startswith("xai-"):
             st.info("🤖 Detected **xAI (Grok)** API Key")
             model_options = ["grok-beta", "grok-2-latest", "grok-vision-beta"]
-            selected_model = st.selectbox("xAI Model:", model_options, index=0)
+            selected_model = st.selectbox("xAI Model:", model_options, key="xai_model_select")
         elif active_key.startswith("gsk_"):
             st.caption("⚡ Detected **Groq (console.groq.com)** API Key")
-            discovered_models = fetch_available_groq_models(active_key)
-            selected_model = st.selectbox("Groq Model:", discovered_models, index=0)
-            custom_model = st.text_input(
-                "Or enter custom model ID (optional):",
-                value="",
-                placeholder="e.g. openai/gpt-oss-120b",
-                help="Type any exact model ID from your Groq console if desired.",
+            discovered_models = get_cached_groq_models(active_key)
+            dropdown_choices = list(discovered_models)
+            if "Custom Model ID..." not in dropdown_choices:
+                dropdown_choices.append("Custom Model ID...")
+
+            choice = st.selectbox(
+                "Groq Model:",
+                dropdown_choices,
+                key="groq_model_select",
+                help="Select an active model from your Groq console.",
             )
-            if custom_model.strip():
-                selected_model = custom_model.strip()
+
+            if choice == "Custom Model ID...":
+                custom_input = st.text_input(
+                    "Enter Model ID:",
+                    key="custom_groq_model_input",
+                    placeholder="e.g. openai/gpt-oss-20b",
+                )
+                selected_model = custom_input.strip() if custom_input.strip() else discovered_models[0]
+            else:
+                selected_model = choice
         else:
             if active_key:
                 st.warning("⚠️ Note: Groq keys start with `gsk_` from console.groq.com; xAI Grok keys start with `xai-`.")
-            selected_model = st.selectbox("Groq Model:", AVAILABLE_GROQ_MODELS, index=0)
+            selected_model = st.selectbox("Groq Model:", AVAILABLE_GROQ_MODELS, key="default_groq_model_select")
 
         openai_api_key = st.text_input(
             "OpenAI API Key (Optional)",
