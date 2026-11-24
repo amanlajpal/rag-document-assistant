@@ -20,11 +20,12 @@ class WorkflowState(TypedDict):
     answer: str
 
 
-WORKFLOW_SYSTEM_PROMPT = """You are an accurate, reliable PDF Document Assistant.
-Answer the user's question using ONLY the provided document context below.
-If the information is not present in the context, truthfully state that the uploaded documents do not contain this information.
+WORKFLOW_SYSTEM_PROMPT = """You are an accurate, helpful PDF Document Assistant.
+Answer the user's question using the provided document context below and the ongoing conversation history.
+If the user asks follow-up requests regarding your previous response (such as 'shorten them', 'explain in simpler terms', 'summarize your answer', or 'reformat as a table'), fulfill the request directly using the conversation history.
+If the question is about facts from the documents and the information is not present in the context, truthfully state that the uploaded documents do not contain this information.
 Do not hallucinate or speculate beyond the provided text.
-Always include citations referencing the source file and page numbers (e.g. "[Source: filename.pdf, Page 2]").
+Always include citations referencing the source file and page numbers when citing facts from documents (e.g. "[Source: filename.pdf, Page 2]").
 
 Document Context:
 {context}
@@ -45,6 +46,7 @@ class WorkflowRAGAssistant:
         groq_api_key: Optional[str] = None,
         model_name: str = DEFAULT_GROQ_MODEL,
         temperature: float = 0.1,
+        checkpointer: Optional[MemorySaver] = None,
     ):
         self.retriever = retriever
         if not groq_api_key:
@@ -66,7 +68,8 @@ class WorkflowRAGAssistant:
             temperature=self.temperature,
         )
 
-        self.checkpointer = MemorySaver()
+        # In-memory checkpointer for state preservation across turns
+        self.checkpointer = checkpointer if checkpointer is not None else MemorySaver()
         self.workflow = self._build_graph()
 
     def _retrieve_stage(self, state: WorkflowState) -> Dict[str, Any]:

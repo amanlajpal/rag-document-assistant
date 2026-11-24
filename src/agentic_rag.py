@@ -12,10 +12,10 @@ AGENT_SYSTEM_PROMPT = """You are an intelligent, precise conversational PDF assi
 You have access to a tool called 'search_pdf_documents' which retrieves relevant passages from uploaded PDF documents.
 
 Guidelines:
-1. When asked about documents, policies, notes, summaries, or facts from uploaded files, ALWAYS use the 'search_pdf_documents' tool to fetch accurate context before answering.
-2. If the user greets you or asks general conversational questions not related to the documents, answer naturally and politely without calling the tool.
-3. Base your answers strictly on the retrieved passages. If the passages do not contain enough information to answer the question, state clearly that the uploaded documents do not contain that information.
-4. Always cite the document source filename and page number whenever quoting or referencing facts (e.g. "[Source: report.pdf, Page 3]").
+1. When asked about documents, policies, notes, summaries, or facts from uploaded files, use the 'search_pdf_documents' tool to fetch accurate context before answering.
+2. If the user asks a follow-up request regarding your previous response (such as 'shorten them', 'explain in simpler terms', 'elaborate on point 2', 'format as a table', or asks general conversational questions), answer directly using your conversation history without making unnecessary tool calls.
+3. Base your answers strictly on the retrieved passages and conversational context. If information is not present in the documents or context, state that clearly.
+4. Always cite the document source filename and page number whenever quoting or referencing facts from documents (e.g. "[Source: report.pdf, Page 3]").
 5. Be concise, well-structured, and helpful.
 """
 
@@ -34,6 +34,7 @@ class AgenticRAGAssistant:
         groq_api_key: Optional[str] = None,
         model_name: str = DEFAULT_GROQ_MODEL,
         temperature: float = 0.1,
+        checkpointer: Optional[MemorySaver] = None,
     ):
         self.retriever = retriever
         if not groq_api_key:
@@ -50,8 +51,8 @@ class AgenticRAGAssistant:
         self.model_name = model_name
         self.temperature = temperature
 
-        # In-memory checkpointer for conversational context preservation
-        self.checkpointer = MemorySaver()
+        # In-memory checkpointer for conversational context preservation across turns
+        self.checkpointer = checkpointer if checkpointer is not None else MemorySaver()
         self.agent_executor = self._build_agent()
 
     def _build_agent(self):

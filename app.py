@@ -11,6 +11,7 @@ from src.vector_store import get_embedding_function, VectorStoreManager
 from src.document_processor import extract_text_from_pdf_stream, chunk_documents
 from src.agentic_rag import AgenticRAGAssistant
 from src.workflow_rag import WorkflowRAGAssistant
+from langgraph.checkpoint.memory import MemorySaver
 from src.config import (
     DEFAULT_GROQ_MODEL,
     DEFAULT_CHUNK_SIZE,
@@ -82,6 +83,12 @@ if "thread_id" not in st.session_state:
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if "agent_checkpointer" not in st.session_state:
+    st.session_state.agent_checkpointer = MemorySaver()
+
+if "workflow_checkpointer" not in st.session_state:
+    st.session_state.workflow_checkpointer = MemorySaver()
 
 if "vector_manager" not in st.session_state or not hasattr(st.session_state.vector_manager, "get_indexed_files_summary"):
     st.session_state.vector_manager = VectorStoreManager(persist_directory=DEFAULT_CHROMA_DIR)
@@ -263,6 +270,8 @@ with st.sidebar:
         if st.button("🔄 Reset Chat", use_container_width=True):
             st.session_state.messages = []
             st.session_state.thread_id = str(uuid.uuid4())
+            st.session_state.agent_checkpointer = MemorySaver()
+            st.session_state.workflow_checkpointer = MemorySaver()
             st.rerun()
 
     with col2:
@@ -271,6 +280,8 @@ with st.sidebar:
             st.session_state.processed_files = []
             st.session_state.messages = []
             st.session_state.thread_id = str(uuid.uuid4())
+            st.session_state.agent_checkpointer = MemorySaver()
+            st.session_state.workflow_checkpointer = MemorySaver()
             st.success("Entire database wiped.")
             st.rerun()
 
@@ -365,6 +376,7 @@ if user_query:
                             retriever=retriever,
                             groq_api_key=active_groq_key,
                             model_name=selected_model,
+                            checkpointer=st.session_state.agent_checkpointer,
                         )
                         response_data = assistant.query(
                             user_message=user_query,
@@ -383,6 +395,7 @@ if user_query:
                                 retriever=retriever,
                                 groq_api_key=active_groq_key,
                                 model_name=selected_model,
+                                checkpointer=st.session_state.workflow_checkpointer,
                             )
                             response_data = fallback_assistant.query(
                                 user_message=user_query,
@@ -398,6 +411,7 @@ if user_query:
                         retriever=retriever,
                         groq_api_key=active_groq_key,
                         model_name=selected_model,
+                        checkpointer=st.session_state.workflow_checkpointer,
                     )
                     response_data = assistant.query(
                         user_message=user_query,
