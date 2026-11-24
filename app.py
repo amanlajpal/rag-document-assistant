@@ -187,14 +187,33 @@ with st.sidebar:
                     st.session_state.processed_files = [f.name for f in uploaded_files]
                     st.success(f"✅ Successfully indexed {len(all_chunks)} chunks into Chroma DB!")
 
-    # Vector Store & Session Status
+    # Vector Store & Persistent File Status
     st.divider()
+    # Ensure vector store is initialized to read disk contents
+    if not st.session_state.vector_manager.vector_store:
+        try:
+            emb_fn = get_embedding_function(provider=provider_key, openai_api_key=openai_api_key)
+            st.session_state.vector_manager.initialize_store(embedding_function=emb_fn)
+        except Exception:
+            pass
+
     doc_count = st.session_state.vector_manager.count_documents()
-    st.write(f"📊 **Indexed Chunks in Chroma:** `{doc_count}`")
-    if st.session_state.processed_files:
-        st.write("📁 **Active Files:**")
-        for fn in st.session_state.processed_files:
-            st.caption(f"• {fn}")
+    st.write(f"📊 **Total Chunks in Chroma DB:** `{doc_count}`")
+
+    # Persistent files stored on disk
+    files_summary = st.session_state.vector_manager.get_indexed_files_summary()
+    if files_summary:
+        st.write("📁 **Files Stored on Disk:**")
+        for fn, info in list(files_summary.items()):
+            f_col1, f_col2 = st.columns([3, 1])
+            with f_col1:
+                st.caption(f"• **{fn}** ({info['chunks']} chunks)")
+            with f_col2:
+                if st.button("❌", key=f"del_{fn}", help=f"Delete {fn} from Chroma DB"):
+                    st.session_state.vector_manager.delete_file(fn)
+                    st.rerun()
+    else:
+        st.caption("No documents currently stored in Chroma DB.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -204,12 +223,12 @@ with st.sidebar:
             st.rerun()
 
     with col2:
-        if st.button("🗑️ Reset DB", use_container_width=True):
+        if st.button("🗑️ Reset All DB", use_container_width=True):
             st.session_state.vector_manager.reset_store()
             st.session_state.processed_files = []
             st.session_state.messages = []
             st.session_state.thread_id = str(uuid.uuid4())
-            st.success("Vector store reset.")
+            st.success("Entire database wiped.")
             st.rerun()
 
 
@@ -230,6 +249,21 @@ st.markdown(
     '</div>',
     unsafe_allow_html=True,
 )
+
+# Chroma DB Inspector
+with st.expander("🔍 Inspect Chroma DB Records (What is Stored?)", expanded=False):
+    stored_chunks = st.session_state.vector_manager.get_all_chunks(limit=50)
+    if not stored_chunks:
+        st.info("Chroma DB is currently empty. Upload and index PDF files above to see stored chunks.")
+    else:
+        st.write(f"Showing up to **50** stored chunks across **{len(files_summary)}** document(s):")
+        for i, chk in enumerate(stored_chunks):
+            meta = chk.get("metadata", {})
+            st.markdown(
+                f"**#{i+1} | Source:** `{meta.get('source', 'unknown')}` | **Page:** `{meta.get('page', 1)}`\n\n"
+                f"> {chk.get('content', '')[:250]}..."
+            )
+            st.divider()
 
 # Display Chat History
 for message in st.session_state.messages:
