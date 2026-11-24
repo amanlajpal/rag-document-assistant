@@ -63,7 +63,7 @@ def generate_all_sample_docs():
     remote_work_sections = [
         (
             "1. Purpose & Scope",
-            "This policy outlines the guidelines and requirements for remote and telecommuting work at ForwardAI. "
+            "This policy outlines the guidelines and requirements for remote and telecommuting work at NovaTech Global. "
             "All full-time software engineers, product managers, and technical specialists are eligible for remote work.",
         ),
         (
@@ -73,12 +73,12 @@ def generate_all_sample_docs():
         ),
         (
             "3. Home Office & Equipment Reimbursement",
-            "ForwardAI provides a one-time home office setup stipend of $1,500 to purchase ergonomic desks, chairs, "
+            "NovaTech Global provides a one-time home office setup stipend of $1,500 to purchase ergonomic desks, chairs, "
             "and external 4K monitors. Additionally, a monthly high-speed internet stipend of $75 is credited to each employee.",
         ),
         (
             "4. Security, VPN & Data Protection",
-            "All remote workers must connect to the corporate network via the approved ForwardAI WireGuard VPN. "
+            "All remote workers must connect to the corporate network via the approved NovaTech WireGuard VPN. "
             "Full-disk encryption (BitLocker on Windows, FileVault on macOS) is mandatory. Company data must never be accessed "
             "over unsecured public Wi-Fi without VPN active.",
         ),
@@ -90,7 +90,7 @@ def generate_all_sample_docs():
     ]
     build_pdf(
         str(out_dir / "company_remote_work_policy.pdf"),
-        "ForwardAI — Remote Work & Telecommuting Policy",
+        "NovaTech Global — Remote Work & Telecommuting Policy",
         remote_work_sections,
     )
 
@@ -98,7 +98,7 @@ def generate_all_sample_docs():
     benefits_sections = [
         (
             "1. Health, Dental & Vision Insurance",
-            "ForwardAI covers 100% of medical, dental, and vision health premiums for all full-time employees, "
+            "NovaTech Global covers 100% of medical, dental, and vision health premiums for all full-time employees, "
             "and 80% coverage for eligible dependents through the BlueCross BlueShield Comprehensive PPO network.",
         ),
         (
@@ -108,7 +108,7 @@ def generate_all_sample_docs():
         ),
         (
             "3. 401(k) Retirement Plan & Company Match",
-            "ForwardAI provides a 401(k) retirement savings plan through Fidelity. The company matches 100% of employee "
+            "NovaTech Global provides a 401(k) retirement savings plan through Fidelity. The company matches 100% of employee "
             "contributions up to 5% of base salary, with immediate 100% vesting from day one.",
         ),
         (
@@ -118,12 +118,12 @@ def generate_all_sample_docs():
         ),
         (
             "5. Parental Leave",
-            "ForwardAI offers 16 weeks of 100% paid parental leave for all new parents following birth, adoption, or foster placement.",
+            "NovaTech Global offers 16 weeks of 100% paid parental leave for all new parents following birth, adoption, or foster placement.",
         ),
     ]
     build_pdf(
         str(out_dir / "employee_benefits_guide.pdf"),
-        "ForwardAI — Comprehensive Employee Benefits Guide",
+        "NovaTech Global — Comprehensive Employee Benefits Guide",
         benefits_sections,
     )
 
@@ -131,7 +131,7 @@ def generate_all_sample_docs():
     ai_sections = [
         (
             "1. Architecture Overview",
-            "ForwardAI builds production GenAI systems using LangChain, LangGraph, ChromaDB, and Groq high-speed LPU inference. "
+            "NovaTech Global builds production GenAI systems using LangChain, LangGraph, ChromaDB, and Groq high-speed LPU inference. "
             "All conversational document assistants must implement Retrieval-Augmented Generation (RAG).",
         ),
         (
@@ -152,7 +152,7 @@ def generate_all_sample_docs():
     ]
     build_pdf(
         str(out_dir / "ai_engineering_handbook.pdf"),
-        "ForwardAI — AI Engineering & RAG Architecture Standards",
+        "NovaTech Global — AI Engineering & RAG Architecture Standards",
         ai_sections,
     )
 
