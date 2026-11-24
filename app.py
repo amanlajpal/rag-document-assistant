@@ -339,17 +339,38 @@ if user_query:
                 retriever = st.session_state.vector_manager.get_retriever(k=DEFAULT_TOP_K)
 
                 if "Agentic RAG" in rag_mode:
-                    assistant = AgenticRAGAssistant(
-                        retriever=retriever,
-                        groq_api_key=active_groq_key,
-                        model_name=selected_model,
-                    )
-                    response_data = assistant.query(
-                        user_message=user_query,
-                        thread_id=st.session_state.thread_id,
-                    )
-                    answer = response_data["answer"]
-                    sources = response_data.get("sources", [])
+                    try:
+                        assistant = AgenticRAGAssistant(
+                            retriever=retriever,
+                            groq_api_key=active_groq_key,
+                            model_name=selected_model,
+                        )
+                        response_data = assistant.query(
+                            user_message=user_query,
+                            thread_id=st.session_state.thread_id,
+                        )
+                        answer = response_data["answer"]
+                        sources = response_data.get("sources", [])
+                    except Exception as agent_err:
+                        err_str = str(agent_err).lower()
+                        if "tool calling" in err_str or "tool_use" in err_str or "tool calling is not supported" in err_str:
+                            st.warning(
+                                f"💡 Note: **`{selected_model}`** does not support function/tool calling required for Agentic RAG. "
+                                "Falling back to the **LangGraph 3-Stage Pipeline** (which injects context directly and works with all models)..."
+                            )
+                            fallback_assistant = WorkflowRAGAssistant(
+                                retriever=retriever,
+                                groq_api_key=active_groq_key,
+                                model_name=selected_model,
+                            )
+                            response_data = fallback_assistant.query(
+                                user_message=user_query,
+                                thread_id=st.session_state.thread_id,
+                            )
+                            answer = response_data["answer"]
+                            sources = response_data.get("sources", [])
+                        else:
+                            raise agent_err
                 else:
                     # LangGraph 3-stage pipeline
                     assistant = WorkflowRAGAssistant(
