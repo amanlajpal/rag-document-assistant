@@ -1,10 +1,14 @@
 import os
+import sys
 import uuid
+import importlib
 import streamlit as st
 from dotenv import load_dotenv
 
-from src.document_processor import extract_text_from_pdf_stream, chunk_documents
+import src.vector_store
+importlib.reload(src.vector_store)
 from src.vector_store import get_embedding_function, VectorStoreManager
+from src.document_processor import extract_text_from_pdf_stream, chunk_documents
 from src.agentic_rag import AgenticRAGAssistant
 from src.workflow_rag import WorkflowRAGAssistant
 from src.config import (
@@ -73,7 +77,7 @@ if "thread_id" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "vector_manager" not in st.session_state:
+if "vector_manager" not in st.session_state or not hasattr(st.session_state.vector_manager, "get_indexed_files_summary"):
     st.session_state.vector_manager = VectorStoreManager(persist_directory=DEFAULT_CHROMA_DIR)
 
 if "processed_files" not in st.session_state:
